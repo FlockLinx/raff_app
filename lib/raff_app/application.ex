@@ -6,6 +6,7 @@ defmodule RaffApp.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Registry, keys: :unique, name: RaffApp.ParticipantRegistry},
       RaffleApp.UserRegistry,
       RaffleApp.RaffleManager
     ]
