@@ -1,10 +1,8 @@
-# test/raff_app/raffle_participant_test.exs
 defmodule RaffApp.RaffleParticipantTest do
   use ExUnit.Case, async: true
 
   setup do
     raffle_id = 123
-    # 1 hora no futuro
     draw_date = DateTime.add(DateTime.utc_now(), 3600)
 
     cleanup_raffle(123)
@@ -43,10 +41,8 @@ defmodule RaffApp.RaffleParticipantTest do
 
     test "prevents participation in expired raffle" do
       raffle_id = 456
-      # 1 hora atrás
       past_date = DateTime.add(DateTime.utc_now(), -3600)
 
-      # Cleanup antes de iniciar
       cleanup_raffle(raffle_id)
 
       {:ok, _pid} = RaffApp.RaffleParticipant.start_link(raffle_id, past_date)

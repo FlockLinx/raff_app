@@ -4,7 +4,9 @@ defmodule RaffApp.SingleWriterProcess do
       use GenServer
 
       def start_link(process_id, process_data) do
-        GenServer.start_link(__MODULE__, {process_id, process_data}, name: process_name(process_id))
+        GenServer.start_link(__MODULE__, {process_id, process_data},
+          name: process_name(process_id)
+        )
       end
 
       def participate(process_id, user_id) do
@@ -24,22 +26,26 @@ defmodule RaffApp.SingleWriterProcess do
       end
 
       def init({process_id, process_data}) do
-        {:ok, %{
-          process_id: process_id,
-          process_data: process_data,
-          participants: %{},
-          participant_ids: MapSet.new()
-        }}
+        {:ok,
+         %{
+           process_id: process_id,
+           process_data: process_data,
+           participants: %{},
+           participant_ids: MapSet.new()
+         }}
       end
 
       def handle_call(msg, from, state) do
         case msg do
           {:participate, user_id, now} ->
             handle_participate(user_id, now, from, state)
+
           :get_participants ->
             handle_get_participants(from, state)
+
           :get_state ->
             handle_get_state(from, state)
+
           custom_msg ->
             if function_exported?(__MODULE__, :handle_call_custom, 3) do
               apply(__MODULE__, :handle_call_custom, [custom_msg, from, state])
@@ -61,11 +67,9 @@ defmodule RaffApp.SingleWriterProcess do
         {:reply, state, state}
       end
 
-      defoverridable [
-        handle_participate: 4,
-        handle_get_participants: 2, 
-        handle_get_state: 2
-      ]
+      defoverridable handle_participate: 4,
+                     handle_get_participants: 2,
+                     handle_get_state: 2
     end
   end
 end
