@@ -28,8 +28,6 @@ defmodule RaffApp.RaffleScheduler do
     new_scheduled_draws = Map.put(scheduled_draws, raffle_id, draw_date)
     new_state = %{state | scheduled_draws: new_scheduled_draws}
 
-    Logger.info("Scheduled draw for raffle #{raffle_id} at #{draw_date}")
-
     {:reply, :ok, new_state}
   end
 
@@ -45,12 +43,18 @@ defmodule RaffApp.RaffleScheduler do
 
     Enum.each(expired_raffles, fn raffle_id ->
       Task.start(fn ->
-        case RaffApp.RaffleParticipant.draw_winner(raffle_id) do
-          {:ok, winner_id} ->
-            Logger.info("Automatically drew winner for raffle #{raffle_id}: #{winner_id}")
+        case Registry.lookup(RaffApp.ParticipantRegistry, raffle_id) do
+          [{pid, _}] when is_pid(pid) ->
+            case RaffApp.RaffleParticipant.draw_winner(raffle_id) do
+              {:ok, winner_id} ->
+                Logger.info("Automatically drew winner for raffle #{raffle_id}: #{winner_id}")
 
-          {:error, reason} ->
-            Logger.warn("Failed to auto-draw raffle #{raffle_id}: #{reason}")
+              {:error, reason} ->
+                Logger.warn("Failed to auto-draw raffle #{raffle_id}: #{reason}")
+            end
+
+          _ ->
+            Logger.warn("RaffleParticipant not found for auto-draw: #{raffle_id}")
         end
       end)
     end)

@@ -10,18 +10,6 @@ defmodule RaffApp.RaffleParticipantTest do
     %{raffle_id: raffle_id, draw_date: draw_date}
   end
 
-  defp cleanup_raffle(raffle_id) do
-    case Registry.lookup(RaffApp.ParticipantRegistry, raffle_id) do
-      [{pid, _}] ->
-        ref = Process.monitor(pid)
-        GenServer.stop(pid)
-        assert_receive {:DOWN, ^ref, :process, _object, _reason}
-
-      [] ->
-        :ok
-    end
-  end
-
   describe "participate/2" do
     test "allows user to participate in open raffle", %{raffle_id: raffle_id} do
       user_id = 1

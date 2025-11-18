@@ -1,6 +1,6 @@
 defmodule RaffApp.RaffleFlowTest do
   use ExUnit.Case, async: false
-  use Plug.Test
+  import Plug.Test
 
   alias RaffApp.Web.Router
 
@@ -23,8 +23,8 @@ defmodule RaffApp.RaffleFlowTest do
       assert participate(raffle["id"], user1["id"]) == "participated"
       assert participate(raffle["id"], user2["id"]) == "participated"
 
-      winner = draw_winner(raffle["id"])
-
+      draw_winner(raffle["id"])
+      
       result = get_result(raffle["id"])
 
       assert result["raffle_id"] == raffle["id"]

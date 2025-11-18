@@ -47,12 +47,41 @@ defmodule RaffApp.RaffleManager do
     new_data = Map.put(data, id, raffle)
     new_state = %{state | data: new_data, next_id: next_id + 1}
 
-    # Agenda sorteio automático (se o scheduler existir)
+    start_raffle_participant(id, draw_date)
+
     if Process.whereis(RaffApp.RaffleScheduler) do
       RaffApp.RaffleScheduler.schedule_raffle_draw(id, draw_date)
     end
 
     {:reply, {:ok, raffle}, new_state}
+  end
+
+  defp start_raffle_participant(raffle_id, draw_date) do
+    case Process.whereis(RaffApp.RaffleParticipantSupervisor) do
+      pid when is_pid(pid) ->
+        case RaffApp.RaffleParticipantSupervisor.start_raffle_participant(raffle_id, draw_date) do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+          _ -> start_directly(raffle_id, draw_date)
+        end
+
+      _ ->
+        start_directly(raffle_id, draw_date)
+    end
+  end
+
+  defp start_directly(raffle_id, draw_date) do
+    case RaffApp.RaffleParticipant.start_link(raffle_id, draw_date) do
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      error ->
+        IO.inspect("Failed to start RaffleParticipant: #{inspect(error)}")
+        :error
+    end
   end
 
   def handle_call({:find, id}, _from, %{data: data} = state) do

@@ -144,7 +144,7 @@ defmodule RaffApp.UserRegistryTest do
 
     test "lida com usuários sem email" do
       user = %{id: 1, name: "No Email User"}
-      
+
       assert {:ok, registered_user} = UserRegistry.register(1, user)
       assert registered_user.name == "No Email User"
 

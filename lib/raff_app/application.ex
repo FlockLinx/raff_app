@@ -7,7 +7,7 @@ defmodule RaffApp.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: RaffApp.ParticipantRegistry},
-
+      RaffApp.RaffleParticipantSupervisor,
       RaffApp.UserRegistry,
       RaffApp.RaffleManager,
       RaffApp.RaffleScheduler,

@@ -1,6 +1,10 @@
 defmodule RaffApp.RaffleParticipant do
   use RaffApp.SingleWriterProcess
 
+  def start_link({raffle_id, draw_date}) do
+    start_link(raffle_id, draw_date)
+  end
+
   def participate(raffle_id, user_id) do
     GenServer.call(process_name(raffle_id), {:participate, user_id, DateTime.utc_now()})
   end
@@ -21,9 +25,18 @@ defmodule RaffApp.RaffleParticipant do
         user_id,
         now \\ DateTime.utc_now(),
         _from,
-        %{process_data: draw_date, participants: participants, participant_ids: ids} = state
+        %{
+          status: status,
+          process_data: draw_date,
+          participants: participants,
+          participant_ids: ids
+        } = state
       ) do
+
     cond do
+      status != :open ->
+        {:reply, {:error, :raffle_closed}, state}
+
       DateTime.compare(now, draw_date) != :lt ->
         {:reply, {:error, :raffle_expired}, state}
 
@@ -31,6 +44,7 @@ defmodule RaffApp.RaffleParticipant do
         {:reply, {:error, :already_participated}, state}
 
       true ->
+
         participant = %{
           user_id: user_id,
           participated_at: now
@@ -50,15 +64,13 @@ defmodule RaffApp.RaffleParticipant do
         {:reply, {:error, :no_participants}, state}
 
       participant_count ->
-        # Algoritmo Fisher-Yates shuffle para ser justo
+        # Fisher-Yates
         winner_user_id = select_winner(participants)
 
-        # Atualiza estado
         new_state = %{state | winner: winner_user_id, status: :finished}
 
-        # Backup em ETS
         :ets.insert(:raffle_backup, {
-          state.raffle_id,
+          state.process_id,
           winner_user_id,
           participant_count,
           DateTime.utc_now()
