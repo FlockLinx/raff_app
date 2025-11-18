@@ -7,8 +7,11 @@ defmodule RaffApp.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: RaffApp.ParticipantRegistry},
-      RaffleApp.UserRegistry,
-      RaffleApp.RaffleManager
+
+      RaffApp.UserRegistry,
+      RaffApp.RaffleManager,
+      RaffApp.RaffleScheduler,
+      {Plug.Cowboy, scheme: :http, plug: RaffApp.Web.Router, options: [port: 4000]}
     ]
 
     opts = [strategy: :one_for_one, name: RaffApp.Supervisor]
