@@ -24,7 +24,7 @@ defmodule RaffApp.RaffleFlowTest do
       assert participate(raffle["id"], user2["id"]) == "participated"
 
       draw_winner(raffle["id"])
-      
+
       result = get_result(raffle["id"])
 
       assert result["raffle_id"] == raffle["id"]

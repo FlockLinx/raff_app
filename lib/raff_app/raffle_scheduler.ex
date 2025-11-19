@@ -10,6 +10,10 @@ defmodule RaffApp.RaffleScheduler do
     GenServer.call(__MODULE__, {:schedule_draw, raffle_id, draw_date})
   end
 
+  def unschedule_draw(raffle_id) do
+    GenServer.call(__MODULE__, {:unschedule, raffle_id})
+  end
+
   def init(_opts) do
     :ets.new(:raffle_backup, [:named_table, :public, :duplicate_bag])
 
@@ -20,6 +24,12 @@ defmodule RaffApp.RaffleScheduler do
     Process.send_after(self(), :check_pending_draws, 30_000)
 
     {:ok, state}
+  end
+
+  def handle_call({:unschedule, raffle_id}, _from, %{scheduled_draws: scheduled_draws} = state) do
+    new_scheduled_draws = Map.delete(scheduled_draws, raffle_id)
+    new_state = %{state | scheduled_draws: new_scheduled_draws}
+    {:reply, :ok, new_state}
   end
 
   def handle_call({:schedule_draw, raffle_id, draw_date}, _from, state) do
@@ -50,11 +60,11 @@ defmodule RaffApp.RaffleScheduler do
                 Logger.info("Automatically drew winner for raffle #{raffle_id}: #{winner_id}")
 
               {:error, reason} ->
-                Logger.warn("Failed to auto-draw raffle #{raffle_id}: #{reason}")
+                Logger.warning("Failed to auto-draw raffle #{raffle_id}: #{reason}")
             end
 
           _ ->
-            Logger.warn("RaffleParticipant not found for auto-draw: #{raffle_id}")
+            Logger.warning("RaffleParticipant not found for auto-draw: #{raffle_id}")
         end
       end)
     end)

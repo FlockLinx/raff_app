@@ -56,6 +56,26 @@ defmodule RaffApp.RaffleManager do
     {:reply, {:ok, raffle}, new_state}
   end
 
+  def handle_call({:find, id}, _from, %{data: data} = state) do
+    raffle = Map.get(data, id)
+
+    if raffle do
+      {:reply, {:ok, raffle}, state}
+    else
+      {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  def handle_call(:list, _from, %{data: data} = state) do
+    raffles = Map.values(data)
+    {:reply, raffles, state}
+  end
+
+  def handle_call(:clear, _from, _state) do
+    initial_state = %{data: %{}, next_id: 1}
+    {:reply, :ok, initial_state}
+  end
+
   defp start_raffle_participant(raffle_id, draw_date) do
     case Process.whereis(RaffApp.RaffleParticipantSupervisor) do
       pid when is_pid(pid) ->
@@ -78,29 +98,8 @@ defmodule RaffApp.RaffleManager do
       {:error, {:already_started, _pid}} ->
         :ok
 
-      error ->
-        IO.inspect("Failed to start RaffleParticipant: #{inspect(error)}")
+      _ ->
         :error
     end
-  end
-
-  def handle_call({:find, id}, _from, %{data: data} = state) do
-    raffle = Map.get(data, id)
-
-    if raffle do
-      {:reply, {:ok, raffle}, state}
-    else
-      {:reply, {:error, :not_found}, state}
-    end
-  end
-
-  def handle_call(:list, _from, %{data: data} = state) do
-    raffles = Map.values(data)
-    {:reply, raffles, state}
-  end
-
-  def handle_call(:clear, _from, _state) do
-    initial_state = %{data: %{}, next_id: 1}
-    {:reply, :ok, initial_state}
   end
 end

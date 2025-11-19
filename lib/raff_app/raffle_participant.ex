@@ -32,7 +32,6 @@ defmodule RaffApp.RaffleParticipant do
           participant_ids: ids
         } = state
       ) do
-
     cond do
       status != :open ->
         {:reply, {:error, :raffle_closed}, state}
@@ -44,7 +43,6 @@ defmodule RaffApp.RaffleParticipant do
         {:reply, {:error, :already_participated}, state}
 
       true ->
-
         participant = %{
           user_id: user_id,
           participated_at: now
@@ -64,7 +62,6 @@ defmodule RaffApp.RaffleParticipant do
         {:reply, {:error, :no_participants}, state}
 
       participant_count ->
-        # Fisher-Yates
         winner_user_id = select_winner(participants)
 
         new_state = %{state | winner: winner_user_id, status: :finished}
