@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  raff_app:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - MIX_ENV=prod
+      - PORT=4000
+
