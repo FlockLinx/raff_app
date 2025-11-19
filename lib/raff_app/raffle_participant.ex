@@ -1,13 +1,41 @@
 defmodule RaffApp.RaffleParticipant do
   use RaffApp.SingleWriterProcess
 
+  def start_link({raffle_id, draw_date}) do
+    start_link(raffle_id, draw_date)
+  end
+
+  def participate(raffle_id, user_id) do
+    GenServer.call(process_name(raffle_id), {:participate, user_id, DateTime.utc_now()})
+  end
+
+  def draw_winner(raffle_id) do
+    GenServer.call(process_name(raffle_id), :draw_winner)
+  end
+
+  def get_winner(raffle_id) do
+    GenServer.call(process_name(raffle_id), :get_winner)
+  end
+
+  def get_status(raffle_id) do
+    GenServer.call(process_name(raffle_id), :get_status)
+  end
+
   def handle_participate(
         user_id,
-        now,
+        now \\ DateTime.utc_now(),
         _from,
-        %{process_data: draw_date, participants: participants, participant_ids: ids} = state
+        %{
+          status: status,
+          process_data: draw_date,
+          participants: participants,
+          participant_ids: ids
+        } = state
       ) do
     cond do
+      status != :open ->
+        {:reply, {:error, :raffle_closed}, state}
+
       DateTime.compare(now, draw_date) != :lt ->
         {:reply, {:error, :raffle_expired}, state}
 
@@ -26,5 +54,60 @@ defmodule RaffApp.RaffleParticipant do
         new_state = %{state | participants: new_participants, participant_ids: new_ids}
         {:reply, :ok, new_state}
     end
+  end
+
+  def handle_draw_winner(_from, %{participants: participants, winner: nil} = state) do
+    case map_size(participants) do
+      0 ->
+        {:reply, {:error, :no_participants}, state}
+
+      participant_count ->
+        winner_user_id = select_winner(participants)
+
+        new_state = %{state | winner: winner_user_id, status: :finished}
+
+        :ets.insert(:raffle_backup, {
+          state.process_id,
+          winner_user_id,
+          participant_count,
+          DateTime.utc_now()
+        })
+
+        {:reply, {:ok, winner_user_id}, new_state}
+    end
+  end
+
+  def handle_draw_winner(_from, %{winner: winner} = state) when not is_nil(winner) do
+    {:reply, {:ok, winner}, state}
+  end
+
+  def handle_draw_winner(_from, %{status: status} = state) when status != :open do
+    {:reply, {:error, :raffle_not_open}, state}
+  end
+
+  def handle_get_winner(_from, %{winner: winner} = state) do
+    {:reply, winner, state}
+  end
+
+  def handle_get_status(
+        _from,
+        %{status: status, process_data: draw_date, participants: participants} = state
+      ) do
+    status_info = %{
+      status: status,
+      draw_date: draw_date,
+      participant_count: map_size(participants),
+      is_expired: DateTime.compare(DateTime.utc_now(), draw_date) != :lt
+    }
+
+    {:reply, status_info, state}
+  end
+
+  defp select_winner(participants) do
+    participants
+    |> Map.values()
+    |> Enum.shuffle()
+    |> hd()
+    |> Map.get(:user_id)
   end
 end
