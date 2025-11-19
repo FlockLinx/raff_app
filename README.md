@@ -9,10 +9,16 @@ Uma API REST para sorteios, construída em Elixir.
 - Mix
 
 ## Setup
+
+Local
  - git clone repo
  - mix deps.get
  - mix test
  - mix run --no-halt
+
+Docker
+ - git clone
+ - docker-compose up --build
 
 A API estará disponível em ```http://localhost:4000```
 
